@@ -1,6 +1,7 @@
 #!/bin/bash
 
 export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7"
+export LD_LIBRARY_PATH=$LIBRARY_PATH:/opt/conda/lib
 
 echo "Lhotse prep"
 lhotse prepare generic -cj download/en-xx/generic_en-xx_mini.jsonl -od data/manifests -c en-xx_general_mini
