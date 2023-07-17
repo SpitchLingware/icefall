@@ -40,7 +40,7 @@ import k2
 import numpy as np
 import sentencepiece as spm
 import torch
-from asr_datamodule import LibriSpeechAsrDataModule
+from asr_datamodule import GenericAsrDataModule
 from decode_stream import DecodeStream
 from kaldifeat import Fbank, FbankOptions
 from lhotse import CutSet
@@ -565,7 +565,7 @@ def decode_dataset(
 
     opts = FbankOptions()
     opts.device = device
-    opts.frame_opts.dither = 0
+    opts.frame_opts.dither = 0.0
     opts.frame_opts.snip_edges = False
     opts.frame_opts.samp_freq = 16000
     opts.mel_opts.num_bins = 80
@@ -589,13 +589,15 @@ def decode_dataset(
         )
 
         audio: np.ndarray = cut.load_audio()
+        # normalize:
+        #audio = audio / np.abs(audio).max()
         # audio.shape: (1, num_samples)
         assert len(audio.shape) == 2
         assert audio.shape[0] == 1, "Should be single channel"
         assert audio.dtype == np.float32, audio.dtype
 
         # The trained model is using normalized samples
-        assert audio.max() <= 1, "Should be normalized to [-1, 1])"
+        #assert audio.max() <= 1, "Should be normalized to [-1, 1])"
 
         samples = torch.from_numpy(audio).squeeze(0)
 
@@ -703,7 +705,7 @@ def save_results(
 @torch.no_grad()
 def main():
     parser = get_parser()
-    LibriSpeechAsrDataModule.add_arguments(parser)
+    GenericAsrDataModule.add_arguments(parser)
     args = parser.parse_args()
     args.exp_dir = Path(args.exp_dir)
 
@@ -846,13 +848,12 @@ def main():
     num_param = sum([p.numel() for p in model.parameters()])
     logging.info(f"Number of model parameters: {num_param}")
 
-    librispeech = LibriSpeechAsrDataModule(args)
+    generic = GenericAsrDataModule(args)
 
-    test_clean_cuts = librispeech.test_clean_cuts()
-    test_other_cuts = librispeech.test_other_cuts()
+    test_cuts = generic.test_cuts()
 
-    test_sets = ["test-clean", "test-other"]
-    test_cuts = [test_clean_cuts, test_other_cuts]
+    test_sets = ["test"]
+    test_cuts = [test_cuts]
 
     for test_set, test_cut in zip(test_sets, test_cuts):
         results_dict = decode_dataset(

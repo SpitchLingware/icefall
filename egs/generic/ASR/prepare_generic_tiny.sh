@@ -3,17 +3,17 @@
 export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7"
 
 echo "Lhotse prep"
-lhotse prepare generic -cj download/en-xx/generic_en-xx_mini.jsonl -od data/manifests -c en-xx_general_mini
+lhotse prepare generic -cj download/en-xx/generic_en-xx_tiny.jsonl -od data/manifests -c en-xx_general_tiny
 
 echo "Lhotse splits"
-python local/prepare_splits.py -p en-xx_general_mini
+python local/prepare_splits.py -p en-xx_general_tiny
 
 lang_dir=data/lang_bpe_500
 mkdir -p $lang_dir
 
 local/generate_transcript.py \
-    -t data/manifests/en-xx_general_mini_supervisions_train.jsonl.gz \
-    -t data/manifests/en-xx_general_mini_supervisions_dev.jsonl.gz \
+    -t data/manifests/en-xx_general_tiny_supervisions_train.jsonl.gz \
+    -t data/manifests/en-xx_general_tiny_supervisions_dev.jsonl.gz \
     -o $lang_dir/transcript_words.txt \
     -w $lang_dir/words.txt
 
@@ -36,6 +36,7 @@ gunzip -c data/manifests/cuts_train.jsonl.gz | shuf | gzip -c > data/manifests/c
 #  --encoder-unmasked-dim 192,192,256,320,256,192 \
 
 # Normal (omit these options for normal scale)
+# See ./zipformer/train.py --help for full set of options
 
 # Small scale model
 ./zipformer/train.py \
@@ -43,7 +44,7 @@ gunzip -c data/manifests/cuts_train.jsonl.gz | shuf | gzip -c > data/manifests/c
   --num-epochs 24 \
   --start-epoch 1 \
   --use-fp16 1 \
-  --exp-dir zipformer/exp-en-mini \
+  --exp-dir zipformer/exp-en-tiny \
   --causal 1 \
   --max-duration 500 \
   --num-encoder-layers 2,2,2,2,2,2 \
